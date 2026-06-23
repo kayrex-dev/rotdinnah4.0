@@ -1,0 +1,2092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+  // Correctly initialize Supabase client
+  const SUPABASE_URL = "https://kbnqulkwuwwztenmrwsu.supabase.co"; 
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibnF1bGt3dXd3enRlbm1yd3N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNzc2NTQsImV4cCI6MjA5Nzc1MzY1NH0.AJsU9RiFTlCdJxqRhiGGcAZbdylnee1sw2EdEdHhLmU";
+  
+  // Changed supabaseClient to supabase
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROTDINNAH FOUNDATION — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --primary: #ff5e62;
+  --secondary: #ff9966;
+  --accent: #c77dff;
+  --accent-light: #ff9a9e;
+  --bg: #080808;
+  --surface: #111111;
+  --surface2: #1a1a1a;
+  --surface3: #222222;
+  --border: #2a2a2a;
+  --text: #ffffff;
+  --text-muted: #888;
+  --text-dim: #555;
+  --success: #2ecc71;
+  --warning: #f39c12;
+  --danger: #e74c3c;
+  --info: #3498db;
+  --grad: linear-gradient(135deg, var(--primary), var(--secondary));
+  --grad2: linear-gradient(135deg, var(--accent-light), var(--secondary));
+  --sidebar-w: 260px;
+  --header-h: 64px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Montserrat', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+/* ---- LOGIN ---- */
+#loginScreen {
+  position: fixed; inset:0; background: var(--bg);
+  display:flex; align-items:center; justify-content:center; z-index:9999;
+  background-image: radial-gradient(circle at 20% 50%, rgba(255,94,98,0.08) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, rgba(199,125,255,0.06) 0%, transparent 40%);
+}
+
+.login-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 48px 40px;
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+}
+
+.login-logo {
+  text-align: center; margin-bottom: 32px;
+}
+
+.login-logo h1 {
+  font-size: 1.1rem; font-weight:700; letter-spacing: 1px;
+  background: var(--grad2); -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+
+.login-logo p { color: var(--text-muted); font-size:0.85rem; margin-top:6px; }
+
+.login-logo .shield {
+  width: 64px; height:64px; border-radius: 50%;
+  background: var(--grad); display:flex; align-items:center; justify-content:center;
+  margin: 0 auto 16px; font-size: 1.6rem;
+  box-shadow: 0 8px 24px rgba(255,94,98,0.3);
+}
+
+.login-box .field { margin-bottom: 20px; }
+.login-box .field label { display:block; font-size:0.8rem; font-weight:600; letter-spacing:1px; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; }
+.login-box .field input {
+  width:100%; padding:14px 16px; background: var(--surface2);
+  border:1px solid var(--border); border-radius:10px; color:var(--text);
+  font-family:inherit; font-size:0.95rem; transition: border-color 0.2s;
+}
+.login-box .field input:focus { outline:none; border-color:var(--secondary); }
+
+.login-btn {
+  width:100%; padding:15px; background:var(--grad);
+  border:none; border-radius:10px; color:#fff; font-family:inherit;
+  font-size:1rem; font-weight:700; cursor:pointer; letter-spacing:0.5px;
+  transition: all 0.3s; margin-top: 8px;
+}
+.login-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(255,94,98,0.4); }
+
+.login-error { color:var(--danger); font-size:0.85rem; text-align:center; margin-top:12px; display:none; }
+
+/* ---- MAIN LAYOUT ---- */
+#app { display:none; }
+
+.sidebar {
+  position: fixed; top:0; left:0; bottom:0; width: var(--sidebar-w);
+  background: var(--surface); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; z-index:100; overflow-y:auto;
+  transition: transform 0.3s;
+}
+
+.sidebar-brand {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-brand h2 {
+  font-size:0.8rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+  background:var(--grad2); -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.sidebar-brand p { font-size:0.7rem; color:var(--text-muted); margin-top:3px; }
+.sidebar-brand .badge {
+  display:inline-block; background:var(--grad); color:#fff; font-size:0.6rem;
+  padding:2px 8px; border-radius:20px; font-weight:700; margin-top:6px;
+}
+
+.sidebar-nav { flex:1; padding:16px 12px; }
+.nav-section-label {
+  font-size:0.65rem; font-weight:700; letter-spacing:2px; color:var(--text-dim);
+  text-transform:uppercase; padding: 16px 8px 8px;
+}
+.nav-item {
+  display:flex; align-items:center; gap:12px; padding:11px 12px;
+  border-radius:10px; cursor:pointer; transition: all 0.2s;
+  color: var(--text-muted); font-size:0.9rem; font-weight:500;
+  border: 1px solid transparent; margin-bottom:2px;
+}
+.nav-item i { width:18px; text-align:center; font-size:0.95rem; }
+.nav-item:hover { background: var(--surface2); color:var(--text); }
+.nav-item.active {
+  background: linear-gradient(135deg, rgba(255,94,98,0.15), rgba(255,153,102,0.1));
+  border-color: rgba(255,153,102,0.3);
+  color: var(--secondary);
+}
+.nav-item .count {
+  margin-left:auto; background: var(--grad); color:#fff;
+  font-size:0.65rem; font-weight:700; padding:2px 7px; border-radius:20px;
+}
+
+.sidebar-footer {
+  padding: 16px 12px; border-top:1px solid var(--border);
+}
+.admin-profile {
+  display:flex; align-items:center; gap:10px; padding:10px;
+}
+.admin-avatar {
+  width:36px; height:36px; border-radius:50%; background:var(--grad);
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem;
+}
+.admin-info h4 { font-size:0.85rem; font-weight:600; }
+.admin-info p { font-size:0.7rem; color:var(--text-muted); }
+.logout-btn {
+  width:100%; margin-top:8px; padding:9px; background:transparent;
+  border:1px solid var(--border); border-radius:8px; color:var(--text-muted);
+  cursor:pointer; font-family:inherit; font-size:0.8rem; transition: all 0.2s;
+}
+.logout-btn:hover { border-color:var(--danger); color:var(--danger); }
+
+/* ---- CONTENT AREA ---- */
+.content {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.topbar {
+  height: var(--header-h); display:flex; align-items:center; justify-content:space-between;
+  padding: 0 28px; border-bottom:1px solid var(--border); background: var(--surface);
+  position: sticky; top:0; z-index:50;
+}
+
+.topbar-left h1 { font-size:1.1rem; font-weight:700; }
+.topbar-left p { font-size:0.75rem; color:var(--text-muted); }
+.topbar-right { display:flex; align-items:center; gap:12px; }
+
+.topbar-btn {
+  padding:8px 16px; border-radius:8px; border:none; cursor:pointer;
+  font-family:inherit; font-size:0.8rem; font-weight:600; transition: all 0.2s;
+}
+.topbar-btn.outline { background:transparent; border:1px solid var(--border); color:var(--text-muted); }
+.topbar-btn.outline:hover { border-color:var(--secondary); color:var(--secondary); }
+.topbar-btn.primary { background:var(--grad); color:#fff; }
+.topbar-btn.primary:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(255,94,98,0.35); }
+
+.page-content { padding: 28px; }
+
+/* ---- DASHBOARD ---- */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+
+.stat-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px;
+  transition: transform 0.2s;
+}
+.stat-card:hover { transform:translateY(-2px); }
+.stat-card .stat-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+.stat-card .stat-icon {
+  width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+}
+.stat-card .stat-num { font-size:1.9rem; font-weight:700; line-height:1; }
+.stat-card .stat-label { font-size:0.8rem; color:var(--text-muted); margin-top:4px; }
+.stat-card .stat-change { font-size:0.75rem; color:var(--success); margin-top:8px; }
+
+.dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.dash-grid-full { grid-column: 1/-1; }
+
+.card {
+  background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden;
+}
+.card-header {
+  padding:18px 20px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.card-header h3 { font-size:0.95rem; font-weight:700; }
+.card-header span { font-size:0.75rem; color:var(--text-muted); }
+.card-body { padding:20px; }
+
+/* ---- PAGE SECTIONS ---- */
+.page { display:none; }
+.page.active { display:block; }
+
+/* ---- FORMS ---- */
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-grid.full { grid-template-columns:1fr; }
+
+.field-group { margin-bottom:18px; }
+.field-group.span2 { grid-column: 1/-1; }
+.field-group label {
+  display:block; font-size:0.75rem; font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;
+}
+.field-group input,
+.field-group textarea,
+.field-group select {
+  width:100%; padding:12px 14px; background:var(--surface2);
+  border:1px solid var(--border); border-radius:10px; color:var(--text);
+  font-family:inherit; font-size:0.9rem; transition: border-color 0.2s;
+}
+.field-group input:focus,
+.field-group textarea:focus,
+.field-group select:focus { outline:none; border-color:var(--secondary); }
+.field-group textarea { min-height:120px; resize:vertical; }
+.field-group select option { background:var(--surface2); }
+
+.upload-zone {
+  border: 2px dashed var(--border); border-radius:12px; padding:32px;
+  text-align:center; cursor:pointer; transition: all 0.2s;
+  background: var(--surface2);
+}
+.upload-zone:hover, .upload-zone.dragover { border-color:var(--secondary); background: rgba(255,153,102,0.05); }
+.upload-zone i { font-size:2rem; color:var(--text-dim); margin-bottom:10px; display:block; }
+.upload-zone p { font-size:0.85rem; color:var(--text-muted); }
+.upload-zone small { font-size:0.75rem; color:var(--text-dim); margin-top:4px; display:block; }
+.upload-zone input { display:none; }
+
+.preview-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); gap:10px; margin-top:14px; }
+.preview-item {
+  position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden;
+  background:var(--surface3); border:1px solid var(--border);
+}
+.preview-item img, .preview-item video { width:100%; height:100%; object-fit:cover; }
+.preview-item .remove {
+  position:absolute; top:4px; right:4px; width:20px; height:20px;
+  background:rgba(0,0,0,0.7); border:none; border-radius:50%; color:#fff;
+  cursor:pointer; font-size:0.65rem; display:flex; align-items:center; justify-content:center;
+}
+.preview-audio {
+  background:var(--surface3); border:1px solid var(--border); border-radius:10px;
+  padding:12px 16px; display:flex; align-items:center; gap:12px; margin-top:10px;
+}
+.preview-audio i { color:var(--secondary); font-size:1.2rem; }
+.preview-audio span { font-size:0.8rem; color:var(--text-muted); flex:1; word-break:break-all; }
+.preview-audio button { background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.8rem; }
+
+.form-actions { display:flex; gap:12px; margin-top:24px; }
+.btn {
+  padding:11px 24px; border-radius:10px; border:none; cursor:pointer;
+  font-family:inherit; font-size:0.88rem; font-weight:700; transition: all 0.2s; letter-spacing:0.3px;
+}
+.btn-primary { background:var(--grad); color:#fff; }
+.btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(255,94,98,0.35); }
+.btn-secondary { background:var(--surface2); border:1px solid var(--border); color:var(--text-muted); }
+.btn-secondary:hover { border-color:var(--secondary); color:var(--secondary); }
+.btn-danger { background:rgba(231,76,60,0.15); border:1px solid rgba(231,76,60,0.3); color:var(--danger); }
+.btn-danger:hover { background:rgba(231,76,60,0.25); }
+.btn-success { background:rgba(46,204,113,0.15); border:1px solid rgba(46,204,113,0.3); color:var(--success); }
+
+/* ---- TABLES ---- */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+th {
+  text-align:left; padding:10px 14px; font-size:0.7rem; font-weight:700;
+  letter-spacing:1px; text-transform:uppercase; color:var(--text-dim);
+  border-bottom:1px solid var(--border);
+}
+td {
+  padding:12px 14px; font-size:0.85rem; border-bottom:1px solid var(--border);
+  vertical-align:middle;
+}
+tr:last-child td { border-bottom:none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+
+.badge-pill {
+  display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.7rem; font-weight:700;
+}
+.badge-live { background:rgba(46,204,113,0.15); color:var(--success); border:1px solid rgba(46,204,113,0.3); }
+.badge-draft { background:rgba(255,153,102,0.1); color:var(--secondary); border:1px solid rgba(255,153,102,0.2); }
+.badge-article { background:rgba(52,152,219,0.12); color:var(--info); border:1px solid rgba(52,152,219,0.2); }
+.badge-media { background:rgba(199,125,255,0.12); color:var(--accent); border:1px solid rgba(199,125,255,0.2); }
+.badge-story { background:rgba(255,94,98,0.12); color:var(--accent-light); border:1px solid rgba(255,94,98,0.2); }
+
+.action-btns { display:flex; gap:6px; }
+.action-btn {
+  padding:5px 10px; border-radius:6px; border:1px solid var(--border);
+  background:transparent; cursor:pointer; font-size:0.75rem; color:var(--text-muted); transition:all 0.2s;
+}
+.action-btn:hover { border-color:var(--secondary); color:var(--secondary); }
+.action-btn.del:hover { border-color:var(--danger); color:var(--danger); }
+
+/* ---- TABS ---- */
+.tab-bar { display:flex; gap:4px; margin-bottom:24px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:4px; width:fit-content; }
+.tab-pill {
+  padding:8px 20px; border-radius:8px; cursor:pointer; font-size:0.85rem; font-weight:600;
+  color:var(--text-muted); transition:all 0.2s; border:none; background:transparent; font-family:inherit;
+}
+.tab-pill.active { background:var(--grad); color:#fff; }
+
+/* ---- ALERTS ---- */
+.alert {
+  padding:14px 18px; border-radius:10px; font-size:0.85rem; margin-bottom:20px;
+  display:flex; align-items:flex-start; gap:10px;
+}
+.alert-info { background:rgba(52,152,219,0.1); border:1px solid rgba(52,152,219,0.2); color:var(--info); }
+.alert-success { background:rgba(46,204,113,0.1); border:1px solid rgba(46,204,113,0.2); color:var(--success); }
+.alert-warning { background:rgba(243,156,18,0.1); border:1px solid rgba(243,156,18,0.2); color:var(--warning); }
+
+/* ---- TOAST ---- */
+#toast {
+  position:fixed; bottom:28px; right:28px; z-index:9999;
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:14px 20px; display:flex; align-items:center; gap:12px;
+  box-shadow:0 10px 40px rgba(0,0,0,0.5); transform:translateY(100px); opacity:0;
+  transition:all 0.3s; min-width:260px;
+}
+#toast.show { transform:translateY(0); opacity:1; }
+#toast .toast-icon { font-size:1.1rem; }
+#toast .toast-msg { font-size:0.85rem; }
+#toast.success .toast-icon { color:var(--success); }
+#toast.error .toast-icon { color:var(--danger); }
+#toast.info .toast-icon { color:var(--info); }
+
+/* ---- MODAL ---- */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.8);
+  z-index:1000; display:none; align-items:center; justify-content:center;
+}
+.modal-overlay.open { display:flex; }
+.modal-box {
+  background:var(--surface); border:1px solid var(--border); border-radius:20px;
+  padding:28px; max-width:560px; width:90%; max-height:90vh; overflow-y:auto;
+}
+.modal-box h3 { font-size:1.1rem; margin-bottom:20px; }
+.modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
+
+/* ---- SETTINGS ---- */
+.settings-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.settings-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; }
+.settings-section h3 { font-size:0.9rem; font-weight:700; margin-bottom:18px; color:var(--accent-light); }
+
+.toggle-row {
+  display:flex; justify-content:space-between; align-items:center; padding:12px 0;
+  border-bottom:1px solid var(--border);
+}
+.toggle-row:last-child { border-bottom:none; }
+.toggle-row .info h4 { font-size:0.85rem; font-weight:600; }
+.toggle-row .info p { font-size:0.75rem; color:var(--text-muted); }
+.toggle {
+  width:44px; height:24px; border-radius:12px; background:var(--border); position:relative;
+  cursor:pointer; transition: background 0.2s;
+}
+.toggle.on { background:var(--secondary); }
+.toggle::after {
+  content:''; position:absolute; top:3px; left:3px;
+  width:18px; height:18px; border-radius:50%; background:#fff;
+  transition:left 0.2s;
+}
+.toggle.on::after { left:23px; }
+
+/* ---- SITE PREVIEW ---- */
+.site-preview-bar {
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:18px 20px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between;
+}
+.site-url { font-family:'JetBrains Mono', monospace; font-size:0.85rem; color:var(--secondary); }
+
+/* ---- RESPONSIVE ---- */
+.menu-btn {
+  display:none; background:none; border:none; color:var(--text); cursor:pointer; font-size:1.3rem; padding:4px;
+}
+
+@media (max-width: 1100px) {
+  .stats-row { grid-template-columns:repeat(2,1fr); }
+  .dash-grid { grid-template-columns:1fr; }
+}
+
+@media (max-width: 768px) {
+  .sidebar { transform:translateX(-100%); }
+  .sidebar.open { transform:translateX(0); }
+  .content { margin-left:0; }
+  .menu-btn { display:block; }
+  .stats-row { grid-template-columns:1fr 1fr; }
+  .form-grid { grid-template-columns:1fr; }
+  .settings-grid { grid-template-columns:1fr; }
+}
+
+/* ---- STORY/ARTICLE LIST ---- */
+.content-card {
+  background:var(--surface2); border:1px solid var(--border); border-radius:12px;
+  padding:16px; margin-bottom:12px; display:flex; gap:14px; transition: border-color 0.2s;
+}
+.content-card:hover { border-color:rgba(255,153,102,0.3); }
+.content-card .thumb {
+  width:72px; height:72px; border-radius:8px; object-fit:cover;
+  background:var(--surface3); flex-shrink:0; display:flex; align-items:center; justify-content:center; color:var(--text-dim);
+}
+.content-card .thumb img { width:100%; height:100%; object-fit:cover; border-radius:8px; }
+.content-card .info { flex:1; min-width:0; }
+.content-card .info h4 { font-size:0.9rem; font-weight:700; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.content-card .info p { font-size:0.78rem; color:var(--text-muted); margin-bottom:8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.content-card .info .meta { display:flex; gap:8px; align-items:center; }
+.content-card .actions { display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+
+/* ---- WEBSITE INFO PANEL ---- */
+.info-panel {
+  background: linear-gradient(135deg, rgba(255,94,98,0.06), rgba(199,125,255,0.04));
+  border:1px solid rgba(255,153,102,0.2); border-radius:14px; padding:22px; margin-bottom:24px;
+}
+.info-panel h3 { font-size:0.85rem; color:var(--secondary); margin-bottom:14px; text-transform:uppercase; letter-spacing:1px; }
+.info-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.info-item { background:var(--surface); border-radius:10px; padding:14px; }
+.info-item .label { font-size:0.68rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+.info-item .value { font-size:0.9rem; font-weight:600; }
+
+/* Richtext toolbar */
+.rich-toolbar {
+  display:flex; gap:4px; flex-wrap:wrap; padding:8px; background:var(--surface2);
+  border:1px solid var(--border); border-radius:8px 8px 0 0; border-bottom:none;
+}
+.rich-btn {
+  padding:5px 9px; border-radius:5px; border:none; background:transparent;
+  color:var(--text-muted); cursor:pointer; font-size:0.8rem; transition:all 0.15s;
+}
+.rich-btn:hover { background:var(--surface3); color:var(--text); }
+[contenteditable] {
+  min-height:150px; padding:12px 14px; background:var(--surface2);
+  border:1px solid var(--border); border-radius:0 0 8px 8px;
+  color:var(--text); font-family:inherit; font-size:0.9rem; outline:none;
+  line-height:1.7;
+}
+[contenteditable]:focus { border-color:var(--secondary); }
+
+/* char counter */
+.char-count { font-size:0.72rem; color:var(--text-dim); text-align:right; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="shield"><i class="fas fa-shield-alt"></i></div>
+      <h1>ROTDINNAH FOUNDATION</h1>
+      <p>Admin Control Panel</p>
+    </div>
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="login-btn" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> &nbsp; Sign In</button>
+    <p class="login-error" id="loginError">❌ Invalid credentials. Try admin / admin123</p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <h2>ROTDINNAH</h2>
+      <p>Foundation Admin</p>
+      <span class="badge">ADMIN</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <div class="nav-item active" onclick="showPage('dashboard', this)">
+        <i class="fas fa-th-large"></i> Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('siteInfo', this)">
+        <i class="fas fa-globe"></i> Site Overview
+      </div>
+      <div class="nav-section-label">Content</div>
+      <div class="nav-item" onclick="showPage('events', this)">
+        <i class="fas fa-calendar-alt"></i> Events
+        <span class="count" id="evCount">0</span>
+      </div>
+      <div class="nav-item" onclick="showPage('articles', this)">
+        <i class="fas fa-newspaper"></i> Articles
+        <span class="count" id="artCount">0</span>
+      </div>
+      <div class="nav-item" onclick="showPage('stories', this)">
+        <i class="fas fa-book-open"></i> Stories
+        <span class="count" id="storyCount">0</span>
+      </div>
+      <div class="nav-item" onclick="showPage('media', this)">
+        <i class="fas fa-photo-video"></i> Media Library
+        <span class="count" id="mediaCount">0</span>
+      </div>
+      <div class="nav-section-label">Site</div>
+      <div class="nav-item" onclick="showPage('siteSettings', this)">
+        <i class="fas fa-cog"></i> Site Settings
+      </div>
+      <div class="nav-item" onclick="showPage('donations', this)">
+        <i class="fas fa-hand-holding-heart"></i> Donations
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-profile">
+        <div class="admin-avatar">AD</div>
+        <div class="admin-info">
+          <h4>Admin</h4>
+          <p>rotdinnah.org</p>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <div class="topbar-left">
+          <h1 id="pageTitle">Dashboard</h1>
+          <p id="pageSubtitle">Welcome back, Admin</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="topbar-btn outline" onclick="window.open('index.html','_blank')">
+          <i class="fas fa-external-link-alt"></i> View Site
+        </button>
+        <button class="topbar-btn primary" id="topbarAction" onclick="handleTopbarAction()">
+          <i class="fas fa-plus"></i> New Content
+        </button>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- DASHBOARD PAGE -->
+      <div class="page active" id="page-dashboard">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-top">
+              <div>
+                <div class="stat-num" id="dash-events">0</div>
+                <div class="stat-label">Total Events</div>
+              </div>
+              <div class="stat-icon" style="background:rgba(255,94,98,0.12);color:var(--primary);">
+                <i class="fas fa-calendar"></i>
+              </div>
+            </div>
+            <div class="stat-change"><i class="fas fa-arrow-up"></i> Live on website</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-top">
+              <div>
+                <div class="stat-num" id="dash-articles">0</div>
+                <div class="stat-label">Articles Published</div>
+              </div>
+              <div class="stat-icon" style="background:rgba(52,152,219,0.12);color:var(--info);">
+                <i class="fas fa-newspaper"></i>
+              </div>
+            </div>
+            <div class="stat-change"><i class="fas fa-arrow-up"></i> In media section</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-top">
+              <div>
+                <div class="stat-num" id="dash-stories">0</div>
+                <div class="stat-label">Stories Shared</div>
+              </div>
+              <div class="stat-icon" style="background:rgba(46,204,113,0.12);color:var(--success);">
+                <i class="fas fa-book-open"></i>
+              </div>
+            </div>
+            <div class="stat-change"><i class="fas fa-arrow-up"></i> Impact stories</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-top">
+              <div>
+                <div class="stat-num" id="dash-media">0</div>
+                <div class="stat-label">Media Files</div>
+              </div>
+              <div class="stat-icon" style="background:rgba(199,125,255,0.12);color:var(--accent);">
+                <i class="fas fa-images"></i>
+              </div>
+            </div>
+            <div class="stat-change"><i class="fas fa-arrow-up"></i> Photos, audio &amp; video</div>
+          </div>
+        </div>
+
+        <div class="info-panel">
+          <h3><i class="fas fa-info-circle"></i> &nbsp; Website Information</h3>
+          <div class="info-grid">
+            <div class="info-item"><div class="label">Organization</div><div class="value">ROTDINNAH FOUNDATION</div></div>
+            <div class="info-item"><div class="label">Founded</div><div class="value">2021</div></div>
+            <div class="info-item"><div class="label">Executive Director</div><div class="value">Susan Rotdi George</div></div>
+            <div class="info-item"><div class="label">Mission</div><div class="value" style="font-size:0.8rem;">Educate, empower & safeguard women &amp; children</div></div>
+            <div class="info-item"><div class="label">Payment Gateway</div><div class="value">Paystack (NGN)</div></div>
+            <div class="info-item"><div class="label">Team Members</div><div class="value">7 Board Members</div></div>
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <div class="card">
+            <div class="card-header"><h3>Recent Events</h3><span onclick="showPage('events',null)" style="cursor:pointer;color:var(--secondary);">View all</span></div>
+            <div class="card-body" id="dash-recent-events">
+              <p style="color:var(--text-muted);font-size:0.85rem;">No events yet. <a href="#" onclick="showPage('events',null);return false;" style="color:var(--secondary);">Add your first event →</a></p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Recent Articles &amp; Stories</h3><span onclick="showPage('articles',null)" style="cursor:pointer;color:var(--secondary);">View all</span></div>
+            <div class="card-body" id="dash-recent-articles">
+              <p style="color:var(--text-muted);font-size:0.85rem;">No articles yet. <a href="#" onclick="showPage('articles',null);return false;" style="color:var(--secondary);">Write your first article →</a></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- LIVE ON INDEX PANEL -->
+        <div class="card dash-grid-full" style="margin-top:20px;">
+          <div class="card-header">
+            <h3><i class="fas fa-globe" style="color:var(--success);margin-right:8px;"></i>Currently Live on index.html</h3>
+            <button class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px;" onclick="window.open('index.html','_blank')"><i class="fas fa-external-link-alt"></i> Open Site</button>
+          </div>
+          <div class="card-body" id="dash-live-preview">
+            <p style="color:var(--text-muted);font-size:0.85rem;">Nothing published yet. Add events, articles, or stories and set them to <strong>Live / Published</strong> to see them here.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SITE OVERVIEW PAGE -->
+      <div class="page" id="page-siteInfo">
+        <div class="alert alert-info"><i class="fas fa-info-circle"></i> This shows a live view of what is currently published to your main website (index.html). All content syncs automatically via Firebase — visible from any device, anywhere.</div>
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header"><h3><i class="fas fa-broadcast-tower" style="color:var(--success);margin-right:8px;"></i>Content Live on Website Right Now</h3><button class="btn btn-secondary" style="font-size:0.75rem;padding:6px 12px;" onclick="renderSiteInfo()"><i class="fas fa-sync"></i> Refresh</button></div>
+          <div class="card-body" id="siteinfo-live-content"><p style="color:var(--text-muted);font-size:0.85rem;">Loading…</p></div>
+        </div>
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header"><h3>Admin-Managed Sections</h3><span style="font-size:0.75rem;color:var(--text-muted);">Controlled from this panel → appear on index.html</span></div>
+          <div class="card-body">
+            <table>
+              <thead><tr><th>Section on index.html</th><th>Managed From</th><th>Where It Shows</th></tr></thead>
+              <tbody>
+                <tr><td>📅 Additional Events</td><td>Events → status: Live</td><td>Below the featured event (Events section)</td></tr>
+                <tr><td>📰 Articles &amp; News</td><td>Articles → status: Published</td><td>Articles tab in Media &amp; Stories section (prepended)</td></tr>
+                <tr><td>💬 Testimonials</td><td>Impact Stories</td><td>Extra slides in the testimonial slider</td></tr>
+                <tr><td>🖼️ Photo Gallery</td><td>Media Library → Images</td><td>Prepended to Photo Gallery tab</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header"><h3>Static Website Sections</h3><span style="font-size:0.75rem;color:var(--text-muted);">Always visible — edit index.html to change</span></div>
+          <div class="card-body">
+            <table>
+              <thead><tr><th>Section</th><th>Status</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>🏠 Hero / Home</td><td><span class="badge-pill badge-live">Live</span></td><td>Empowering Lives, Creating Opportunities</td></tr>
+                <tr><td>📖 About Us</td><td><span class="badge-pill badge-live">Live</span></td><td>Mission, Vision, and Story since 2021</td></tr>
+                <tr><td>👤 Executive Director</td><td><span class="badge-pill badge-live">Live</span></td><td>Susan Rotdi George – Bio &amp; Social Links</td></tr>
+                <tr><td>👥 Our Team</td><td><span class="badge-pill badge-live">Live</span></td><td>7 Board Members displayed</td></tr>
+                <tr><td>📅 Events (featured)</td><td><span class="badge-pill badge-live">Live</span></td><td>Surviving Reality — Disability Rights episode</td></tr>
+                <tr><td>🎙️ Podcast Player</td><td><span class="badge-pill badge-live">Live</span></td><td>27-03-2026 audio (update src in index.html)</td></tr>
+                <tr><td>🎯 Programs</td><td><span class="badge-pill badge-live">Live</span></td><td>Disability Support &amp; Women Empowerment tabs</td></tr>
+                <tr><td>📊 Impact Stats</td><td><span class="badge-pill badge-live">Live</span></td><td>75 persons, 50 women, 4 communities, 30 volunteers</td></tr>
+                <tr><td>💌 Get Involved</td><td><span class="badge-pill badge-live">Live</span></td><td>Donate, Volunteer, Spread the Word</td></tr>
+                <tr><td>📞 Contact</td><td><span class="badge-pill badge-live">Live</span></td><td>Contact form + info</td></tr>
+                <tr><td>💳 Donation Modal</td><td><span class="badge-pill badge-live">Live</span></td><td>Paystack integration (NGN)</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="window.open('index.html','_blank')"><i class="fas fa-external-link-alt"></i> Open index.html</button>
+        </div>
+      </div>
+      <!-- (original site overview end) --><div style="display:none;" id="page-siteInfo-old">
+        <div class="alert alert-info"><i class="fas fa-info-circle"></i> This shows live information pulled from your main website (index.html). All data is synced via Firebase Firestore.</div>
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header"><h3>Main Website Sections</h3></div>
+          <div class="card-body">
+            <table>
+              <thead><tr><th>Section</th><th>Status</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>🏠 Hero / Home</td><td><span class="badge-pill badge-live">Live</span></td><td>Empowering Lives, Creating Opportunities</td></tr>
+                <tr><td>📖 About Us</td><td><span class="badge-pill badge-live">Live</span></td><td>Mission, Vision, and Story since 2021</td></tr>
+                <tr><td>👤 Executive Director</td><td><span class="badge-pill badge-live">Live</span></td><td>Susan Rotdi George – Bio & Social Links</td></tr>
+                <tr><td>👥 Our Team</td><td><span class="badge-pill badge-live">Live</span></td><td>7 Board Members displayed</td></tr>
+                <tr><td>📅 Events</td><td><span class="badge-pill badge-live">Live</span></td><td>Radio features, community engagements</td></tr>
+                <tr><td>📰 Media / Articles</td><td><span class="badge-pill badge-live">Live</span></td><td>News articles and photo galleries</td></tr>
+                <tr><td>🎯 Programs</td><td><span class="badge-pill badge-live">Live</span></td><td>Tabbed program showcase</td></tr>
+                <tr><td>📊 Impact Stats</td><td><span class="badge-pill badge-live">Live</span></td><td>Animated counters</td></tr>
+                <tr><td>💌 Get Involved</td><td><span class="badge-pill badge-live">Live</span></td><td>Donate, Volunteer, Partner</td></tr>
+                <tr><td>📞 Contact</td><td><span class="badge-pill badge-live">Live</span></td><td>Contact form + info</td></tr>
+                <tr><td>💳 Donation Modal</td><td><span class="badge-pill badge-live">Live</span></td><td>Paystack integration (NGN)</td></tr>
+                <tr><td>🎙️ Podcast Player</td><td><span class="badge-pill badge-live">Live</span></td><td>Audio player in events section</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="site-preview-bar">
+          <div>
+            <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:4px;">Main Website File</div>
+            <div class="site-url">📄 index.html</div>
+          </div>
+          <button class="btn btn-primary" onclick="window.open('index.html','_blank')"><i class="fas fa-external-link-alt"></i> Open Site</button>
+        </div>
+      </div>
+
+      <!-- EVENTS PAGE -->
+      <div class="page" id="page-events">
+        <div class="tab-bar">
+          <button class="tab-pill active" onclick="switchTab('events','list',this)">All Events</button>
+          <button class="tab-pill" onclick="switchTab('events','add',this)">+ Add Event</button>
+        </div>
+
+        <!-- LIST -->
+        <div id="events-list">
+          <div class="card">
+            <div class="card-header"><h3>Events</h3><span id="ev-list-count" style="color:var(--text-muted);font-size:0.8rem;"></span></div>
+            <div class="card-body" id="events-list-body">
+              <p style="color:var(--text-muted);font-size:0.85rem;">No events added yet.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADD FORM -->
+        <div id="events-add" style="display:none;">
+          <div class="alert alert-info"><i class="fas fa-lightbulb"></i> Events appear in the <strong>Events section</strong> of your website. Upload a poster image and optional audio recording.</div>
+          <div class="card">
+            <div class="card-header"><h3 id="evFormTitle">Add New Event</h3></div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="field-group">
+                  <label>Event Title *</label>
+                  <input type="text" id="evTitle" placeholder="e.g. Rights of Persons with Disability Forum">
+                </div>
+                <div class="field-group">
+                  <label>Show / Category Label</label>
+                  <input type="text" id="evCategory" placeholder="e.g. RADIO FEATURE">
+                </div>
+                <div class="field-group">
+                  <label>Date *</label>
+                  <input type="date" id="evDate">
+                </div>
+                <div class="field-group">
+                  <label>Time</label>
+                  <input type="time" id="evTime">
+                </div>
+                <div class="field-group">
+                  <label>Location</label>
+                  <input type="text" id="evLocation" placeholder="e.g. Jos, Plateau State">
+                </div>
+                <div class="field-group">
+                  <label>Host / Station</label>
+                  <input type="text" id="evHost" placeholder="e.g. Liberty Radio 101.5 FM">
+                </div>
+                <div class="field-group span2">
+                  <label>Event Description *</label>
+                  <div class="rich-toolbar">
+                    <button class="rich-btn" onclick="fmt('bold')"><b>B</b></button>
+                    <button class="rich-btn" onclick="fmt('italic')"><i>I</i></button>
+                    <button class="rich-btn" onclick="fmt('underline')"><u>U</u></button>
+                    <button class="rich-btn" onclick="fmt('insertUnorderedList')">• List</button>
+                    <button class="rich-btn" onclick="fmt('insertOrderedList')">1. List</button>
+                  </div>
+                  <div contenteditable="true" id="evDesc" placeholder="Describe the event in detail..."></div>
+                </div>
+                <div class="field-group">
+                  <label>Status</label>
+                  <select id="evStatus">
+                    <option value="live">Live / Published</option>
+                    <option value="draft">Draft</option>
+                    <option value="upcoming">Upcoming</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label>Badge Label (shown on poster)</label>
+                  <input type="text" id="evBadge" placeholder="e.g. Radio Feature">
+                </div>
+                <div class="field-group">
+                  <label>Guest 1</label>
+                  <input type="text" id="evGuest1" placeholder="Name – Role">
+                </div>
+                <div class="field-group">
+                  <label>Guest 2</label>
+                  <input type="text" id="evGuest2" placeholder="Name – Role">
+                </div>
+                <div class="field-group span2">
+                  <label>Event Poster / Image</label>
+                  <div class="upload-zone" id="evImgZone" onclick="document.getElementById('evImgInput').click()" ondragover="dragOver(event,this)" ondrop="dropFile(event,'evImgInput',renderEvImg)">
+                    <i class="fas fa-image"></i>
+                    <p>Click or drag &amp; drop event poster</p>
+                    <small>JPG, PNG, WebP — max 5MB</small>
+                    <input type="file" id="evImgInput" accept="image/*" onchange="renderEvImg(this.files[0])">
+                  </div>
+                  <div id="evImgPreview"></div>
+                </div>
+                <div class="field-group span2">
+                  <label>Audio Recording (Podcast / Interview)</label>
+                  <div class="upload-zone" id="evAudioZone" onclick="document.getElementById('evAudioInput').click()" ondragover="dragOver(event,this)" ondrop="dropFile(event,'evAudioInput',renderEvAudio)">
+                    <i class="fas fa-microphone"></i>
+                    <p>Click or drag &amp; drop audio file</p>
+                    <small>MP3, WAV, OGG — max 50MB</small>
+                    <input type="file" id="evAudioInput" accept="audio/*" onchange="renderEvAudio(this.files[0])">
+                  </div>
+                  <div id="evAudioPreview"></div>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveEvent()"><i class="fas fa-save"></i> Save Event</button>
+                <button class="btn btn-secondary" onclick="resetEventForm()">Reset</button>
+                <button class="btn btn-secondary" onclick="switchTab('events','list',null)">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARTICLES PAGE -->
+      <div class="page" id="page-articles">
+        <div class="tab-bar">
+          <button class="tab-pill active" onclick="switchTab('articles','list',this)">All Articles</button>
+          <button class="tab-pill" onclick="switchTab('articles','add',this)">+ Write Article</button>
+        </div>
+        <div id="articles-list">
+          <div class="card">
+            <div class="card-header"><h3>Articles</h3><span id="art-list-count" style="color:var(--text-muted);font-size:0.8rem;"></span></div>
+            <div class="card-body" id="articles-list-body">
+              <p style="color:var(--text-muted);font-size:0.85rem;">No articles yet.</p>
+            </div>
+          </div>
+        </div>
+        <div id="articles-add" style="display:none;">
+          <div class="alert alert-info"><i class="fas fa-lightbulb"></i> Articles appear in the <strong>Media → Articles</strong> tab of your website.</div>
+          <div class="card">
+            <div class="card-header"><h3 id="artFormTitle">Write New Article</h3></div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="field-group">
+                  <label>Article Title *</label>
+                  <input type="text" id="artTitle" placeholder="Enter article headline">
+                </div>
+                <div class="field-group">
+                  <label>Category</label>
+                  <select id="artCategory">
+                    <option>News</option>
+                    <option>Impact Story</option>
+                    <option>Community</option>
+                    <option>Health</option>
+                    <option>Education</option>
+                    <option>Advocacy</option>
+                    <option>Events</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label>Author</label>
+                  <input type="text" id="artAuthor" value="ROTDINNAH FOUNDATION">
+                </div>
+                <div class="field-group">
+                  <label>Date Published</label>
+                  <input type="date" id="artDate">
+                </div>
+                <div class="field-group span2">
+                  <label>Excerpt (short summary for cards)</label>
+                  <textarea id="artExcerpt" style="min-height:70px;" placeholder="Brief summary shown on article cards (2-3 sentences)..."></textarea>
+                </div>
+                <div class="field-group span2">
+                  <label>Full Article Body *</label>
+                  <div class="rich-toolbar">
+                    <button class="rich-btn" onclick="fmt2('bold')"><b>B</b></button>
+                    <button class="rich-btn" onclick="fmt2('italic')"><i>I</i></button>
+                    <button class="rich-btn" onclick="fmt2('underline')"><u>U</u></button>
+                    <button class="rich-btn" onclick="fmt2('insertUnorderedList')">• List</button>
+                    <button class="rich-btn" onclick="fmt2('insertOrderedList')">1. List</button>
+                    <button class="rich-btn" onclick="fmt2('justifyLeft')">⬅ Left</button>
+                    <button class="rich-btn" onclick="fmt2('justifyCenter')">Center</button>
+                  </div>
+                  <div contenteditable="true" id="artBody" placeholder="Write your full article here..."></div>
+                </div>
+                <div class="field-group span2">
+                  <label>Featured Image</label>
+                  <div class="upload-zone" onclick="document.getElementById('artImgInput').click()" ondragover="dragOver(event,this)" ondrop="dropFile(event,'artImgInput',renderArtImg)">
+                    <i class="fas fa-image"></i>
+                    <p>Click or drag &amp; drop article image</p>
+                    <small>JPG, PNG — max 5MB</small>
+                    <input type="file" id="artImgInput" accept="image/*" onchange="renderArtImg(this.files[0])">
+                  </div>
+                  <div id="artImgPreview"></div>
+                </div>
+                <div class="field-group">
+                  <label>Status</label>
+                  <select id="artStatus">
+                    <option value="published">Published</option>
+                    <option value="draft">Draft</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveArticle()"><i class="fas fa-save"></i> Publish Article</button>
+                <button class="btn btn-secondary" onclick="resetArticleForm()">Reset</button>
+                <button class="btn btn-secondary" onclick="switchTab('articles','list',null)">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STORIES PAGE -->
+      <div class="page" id="page-stories">
+        <div class="tab-bar">
+          <button class="tab-pill active" onclick="switchTab('stories','list',this)">All Stories</button>
+          <button class="tab-pill" onclick="switchTab('stories','add',this)">+ Add Story</button>
+        </div>
+        <div id="stories-list">
+          <div class="card">
+            <div class="card-header"><h3>Impact Stories</h3><span id="story-list-count" style="color:var(--text-muted);font-size:0.8rem;"></span></div>
+            <div class="card-body" id="stories-list-body">
+              <p style="color:var(--text-muted);font-size:0.85rem;">No stories yet.</p>
+            </div>
+          </div>
+        </div>
+        <div id="stories-add" style="display:none;">
+          <div class="alert alert-success"><i class="fas fa-heart"></i> Impact stories inspire donors and volunteers. They appear in the <strong>Media → Stories</strong> section of your website.</div>
+          <div class="card">
+            <div class="card-header"><h3 id="storyFormTitle">Share an Impact Story</h3></div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="field-group">
+                  <label>Story Title *</label>
+                  <input type="text" id="stTitle" placeholder="e.g. How ROTDINNAH Changed My Life">
+                </div>
+                <div class="field-group">
+                  <label>Subject / Person Name</label>
+                  <input type="text" id="stSubject" placeholder="e.g. Amina, 28 — Plateau State">
+                </div>
+                <div class="field-group">
+                  <label>Program / Category</label>
+                  <select id="stCategory">
+                    <option>Education Support</option>
+                    <option>Healthcare Services</option>
+                    <option>Skills Training</option>
+                    <option>Advocacy</option>
+                    <option>Disability Support</option>
+                    <option>Women Empowerment</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label>Date</label>
+                  <input type="date" id="stDate">
+                </div>
+                <div class="field-group span2">
+                  <label>Story (full text) *</label>
+                  <div class="rich-toolbar">
+                    <button class="rich-btn" onclick="fmt3('bold')"><b>B</b></button>
+                    <button class="rich-btn" onclick="fmt3('italic')"><i>I</i></button>
+                    <button class="rich-btn" onclick="fmt3('underline')"><u>U</u></button>
+                  </div>
+                  <div contenteditable="true" id="stBody" placeholder="Tell the full story of impact..."></div>
+                </div>
+                <div class="field-group span2">
+                  <label>Photo / Image</label>
+                  <div class="upload-zone" onclick="document.getElementById('stImgInput').click()" ondragover="dragOver(event,this)" ondrop="dropFile(event,'stImgInput',renderStImg)">
+                    <i class="fas fa-portrait"></i>
+                    <p>Click or drag &amp; drop a photo</p>
+                    <small>JPG, PNG — max 5MB</small>
+                    <input type="file" id="stImgInput" accept="image/*" onchange="renderStImg(this.files[0])">
+                  </div>
+                  <div id="stImgPreview"></div>
+                </div>
+                <div class="field-group span2">
+                  <label>Audio Story (Optional)</label>
+                  <div class="upload-zone" onclick="document.getElementById('stAudioInput').click()" ondragover="dragOver(event,this)" ondrop="dropFile(event,'stAudioInput',renderStAudio)">
+                    <i class="fas fa-microphone-alt"></i>
+                    <p>Upload audio narration of the story</p>
+                    <small>MP3, WAV — max 50MB</small>
+                    <input type="file" id="stAudioInput" accept="audio/*" onchange="renderStAudio(this.files[0])">
+                  </div>
+                  <div id="stAudioPreview"></div>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveStory()"><i class="fas fa-heart"></i> Save Story</button>
+                <button class="btn btn-secondary" onclick="resetStoryForm()">Reset</button>
+                <button class="btn btn-secondary" onclick="switchTab('stories','list',null)">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MEDIA LIBRARY PAGE -->
+      <div class="page" id="page-media">
+        <div class="tab-bar">
+          <button class="tab-pill active" onclick="switchTab('media','library',this)">Library</button>
+          <button class="tab-pill" onclick="switchTab('media','upload',this)">+ Upload</button>
+        </div>
+        <div id="media-library">
+          <div class="card">
+            <div class="card-header"><h3>Media Library</h3><span id="media-list-count" style="color:var(--text-muted);font-size:0.8rem;"></span></div>
+            <div class="card-body">
+              <div id="media-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
+                <p style="color:var(--text-muted);font-size:0.85rem;grid-column:1/-1;">No media uploaded yet.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="media-upload" style="display:none;">
+          <div class="card">
+            <div class="card-header"><h3>Upload Media</h3></div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="field-group span2">
+                  <label>Files (images or audio)</label>
+                  <div class="upload-zone" onclick="document.getElementById('mediaInput').click()" ondragover="dragOver(event,this)" ondrop="dropFile(event,'mediaInput',renderMediaPreviews)">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Click or drag &amp; drop files here</p>
+                    <small>Images: JPG, PNG, WebP | Audio: MP3, WAV | Max 50MB each</small>
+                    <input type="file" id="mediaInput" accept="image/*,audio/*" multiple onchange="renderMediaPreviews(null, this.files)">
+                  </div>
+                  <div id="mediaPreviewArea" class="preview-grid"></div>
+                </div>
+                <div class="field-group">
+                  <label>Section / Tag</label>
+                  <select id="mediaSection">
+                    <option>Events</option>
+                    <option>Stories</option>
+                    <option>Programs</option>
+                    <option>Team</option>
+                    <option>General</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label>Caption / Description</label>
+                  <input type="text" id="mediaCaption" placeholder="Optional description">
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveMedia()"><i class="fas fa-upload"></i> Upload to Library</button>
+                <button class="btn btn-secondary" onclick="switchTab('media','library',null)">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SITE SETTINGS PAGE -->
+      <div class="page" id="page-siteSettings">
+        <div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> Settings changes are saved to your browser's local storage and exported as code snippets to paste into your index.html file.</div>
+        <div class="settings-grid">
+          <div class="settings-section">
+            <h3><i class="fas fa-palette"></i> Site Visibility</h3>
+            <div class="toggle-row">
+              <div class="info"><h4>Events Section</h4><p>Show events on main site</p></div>
+              <div class="toggle on" id="tog-events" onclick="toggleSetting(this)"></div>
+            </div>
+            <div class="toggle-row">
+              <div class="info"><h4>Media Section</h4><p>Show articles &amp; media</p></div>
+              <div class="toggle on" id="tog-media" onclick="toggleSetting(this)"></div>
+            </div>
+            <div class="toggle-row">
+              <div class="info"><h4>Stories Section</h4><p>Show impact stories</p></div>
+              <div class="toggle on" id="tog-stories" onclick="toggleSetting(this)"></div>
+            </div>
+            <div class="toggle-row">
+              <div class="info"><h4>Donation Button</h4><p>Show donate button in nav</p></div>
+              <div class="toggle on" id="tog-donate" onclick="toggleSetting(this)"></div>
+            </div>
+          </div>
+          <div class="settings-section">
+            <h3><i class="fas fa-edit"></i> Site Info</h3>
+            <div class="field-group">
+              <label>Organization Name</label>
+              <input type="text" id="set-orgname" value="ROTDINNAH FOUNDATION">
+            </div>
+            <div class="field-group">
+              <label>Tagline</label>
+              <input type="text" id="set-tagline" value="Empowering Lives, Creating Opportunities">
+            </div>
+            <div class="field-group">
+              <label>Contact Email</label>
+              <input type="email" id="set-email" value="susandefovored@gmail.com">
+            </div>
+            <button class="btn btn-primary" onclick="saveSettings()"><i class="fas fa-save"></i> Save Settings</button>
+          </div>
+          <div class="settings-section" style="grid-column:1/-1;">
+            <h3><i class="fas fa-code"></i> Export Instructions</h3>
+            <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">To make events, articles, and stories appear dynamically on your website, add the following script at the bottom of your index.html before the closing &lt;/body&gt; tag:</p>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--secondary);line-height:1.8;white-space:pre-wrap;" id="exportCode">
+&lt;!-- ADMIN CONTENT LOADER --&gt;
+&lt;script&gt;
+  // This script loads admin-published content into your website
+  // Paste this at the bottom of index.html before &lt;/body&gt;
+
+  (function() {
+    var events = JSON.parse(localStorage.getItem('rf_events') || '[]');
+    var articles = JSON.parse(localStorage.getItem('rf_articles') || '[]');
+    var stories = JSON.parse(localStorage.getItem('rf_stories') || '[]');
+
+    // Content is loaded from localStorage — see admin.html for details
+    console.log('ROTDINNAH CMS: Loaded', events.length, 'events,', articles.length, 'articles,', stories.length, 'stories');
+  })();
+&lt;/script&gt;
+            </div>
+            <button class="btn btn-secondary" style="margin-top:12px;" onclick="copyExportCode()"><i class="fas fa-copy"></i> Copy Code</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DONATIONS PAGE -->
+      <div class="page" id="page-donations">
+        <div class="alert alert-info"><i class="fas fa-info-circle"></i> Donations are processed via <strong>Paystack</strong>. Log into your Paystack dashboard at paystack.com to view transactions.</div>
+        <div class="settings-grid">
+          <div class="settings-section">
+            <h3><i class="fas fa-key"></i> Paystack Configuration</h3>
+            <div class="field-group">
+              <label>Public Key</label>
+              <input type="text" value="pk_live_29f6f65d393e2502f5123ce7b173b07e55d989e6" readonly style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">
+            </div>
+            <div class="field-group">
+              <label>Currency</label>
+              <input type="text" value="NGN (Nigerian Naira ₦)" readonly>
+            </div>
+            <div class="field-group">
+              <label>Minimum Donation</label>
+              <input type="text" value="₦100" readonly>
+            </div>
+            <p style="font-size:0.8rem;color:var(--text-muted);">To change Paystack settings, update the key in your index.html file inside the <code>processPayment()</code> function.</p>
+          </div>
+          <div class="settings-section">
+            <h3><i class="fas fa-chart-bar"></i> Donation Options Live on Site</h3>
+            <table>
+              <thead><tr><th>Amount</th><th>Type</th></tr></thead>
+              <tbody>
+                <tr><td>₦5,000</td><td>One-time / Monthly</td></tr>
+                <tr><td>₦10,000</td><td>One-time / Monthly</td></tr>
+                <tr><td>₦25,000</td><td>One-time / Monthly</td></tr>
+                <tr><td>₦50,000</td><td>One-time / Monthly</td></tr>
+                <tr><td>Custom Amount</td><td>Any amount ≥ ₦100</td></tr>
+              </tbody>
+            </table>
+            <a href="https://dashboard.paystack.com" target="_blank" class="btn btn-primary" style="margin-top:16px;display:inline-block;text-decoration:none;">
+              <i class="fas fa-external-link-alt"></i> Open Paystack Dashboard
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end page-content -->
+  </main>
+</div>
+
+<!-- TOAST -->
+<div id="toast">
+  <span class="toast-icon" id="toastIcon"></span>
+  <span class="toast-msg" id="toastMsg"></span>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <h3>⚠️ Confirm Delete</h3>
+    <p style="color:var(--text-muted);font-size:0.9rem;" id="deleteMsg">Are you sure you want to delete this item?</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" id="deleteConfirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getFirestore, collection, getDocs, setDoc, deleteDoc, doc, onSnapshot }
+  from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCbuRvg83T8I0FRzpgeITRsAON85kDgwBw",
+  authDomain: "rotdinnah-foundation.firebaseapp.com",
+  projectId: "rotdinnah-foundation",
+  storageBucket: "rotdinnah-foundation.firebasestorage.app",
+  messagingSenderId: "484339162789",
+  appId: "1:484339162789:web:90face3f67a341a7bf374c",
+  measurementId: "G-F5KQQJFBJX"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+// ── in-memory cache (replaces localStorage) ──────────────────────────
+window._rfCache = { events: [], articles: [], stories: [], media: [] };
+
+// ── helpers exposed to non-module script below ────────────────────────
+window._rfDB = db;
+window._rfCol = collection;
+window._rfGetDocs = getDocs;
+window._rfSetDoc = setDoc;
+window._rfDeleteDoc = deleteDoc;
+window._rfDoc = doc;
+window._rfOnSnapshot = onSnapshot;
+
+// ── load all collections on startup ──────────────────────────────────
+async function loadAll() {
+  for (const key of ['events','articles','stories','media']) {
+    const snap = await getDocs(collection(db, key));
+    window._rfCache[key] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+  // now boot the UI
+  if (typeof window._rfReady === 'function') window._rfReady();
+}
+
+// live listeners — any change in Firestore instantly updates the cache & UI
+['events','articles','stories','media'].forEach(key => {
+  onSnapshot(collection(db, key), snap => {
+    window._rfCache[key] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (window._rfUIReady) {
+      updateCounts();
+      renderLivePreview();
+      renderAllLists();
+      renderDashboard();
+    }
+  });
+});
+
+loadAll();
+</script>
+
+<script>
+// =======================================
+// STATE
+// =======================================
+let editMode = { type: null, id: null };
+let pendingDelete = null;
+let evImgData = null, evAudioData = null;
+let artImgData = null;
+let stImgData = null, stAudioData = null;
+let mediaPendingFiles = [];
+
+// ── getData / setData now use Firebase via the cache ─────────────────
+function getData(key) {
+  return window._rfCache ? (window._rfCache[key] || []) : [];
+}
+
+async function setData(key, arr) {
+  // update cache immediately so UI feels instant
+  window._rfCache[key] = arr;
+  updateCounts();
+  renderLivePreview();
+
+  // sync every item to Firestore
+  const col = window._rfCol(window._rfDB, key);
+  // delete removed docs
+  try {
+    const snap = await window._rfGetDocs(col);
+    const existingIds = snap.docs.map(d => d.id);
+    const newIds = arr.map(i => i.id);
+    for (const eid of existingIds) {
+      if (!newIds.includes(eid)) {
+        await window._rfDeleteDoc(window._rfDoc(window._rfDB, key, eid));
+      }
+    }
+    // upsert all items
+    for (const item of arr) {
+      await window._rfSetDoc(window._rfDoc(window._rfDB, key, item.id), item);
+    }
+  } catch(e) {
+    console.error('Firebase sync error:', e);
+    showToast('Sync error — check console', 'error');
+  }
+}
+
+function uid() { return Date.now() + '_' + Math.random().toString(36).substr(2,6); }
+
+// called by the module script once all data is loaded
+window._rfReady = function() {
+  window._rfUIReady = true;
+  // only boot UI if user is already logged in
+  if (document.getElementById('app').style.display === 'block') {
+    updateCounts(); renderDashboard(); renderAllLists();
+  }
+};
+
+// =======================================
+// AUTH
+// =======================================
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  if ((u === 'admin' && p === 'admin123') || (u === 'rotdinnah' && p === 'rotdinnah2024')) {
+    document.getElementById('loginError').style.display = 'none';
+    // show loading state while Firebase finishes connecting
+    const btn = document.querySelector('.login-btn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> &nbsp; Connecting...';
+    btn.disabled = true;
+
+    function bootUI() {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      window._rfUIReady = true;
+      updateCounts(); renderDashboard(); renderAllLists();
+      setTodayDates();
+      btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> &nbsp; Sign In';
+      btn.disabled = false;
+    }
+
+    // if Firebase data already loaded, boot immediately; otherwise wait
+    if (window._rfCache && (
+      window._rfCache.events.length > 0 ||
+      window._rfCache.articles.length > 0 ||
+      window._rfCache.stories.length > 0 ||
+      window._rfCache.media.length > 0
+    )) {
+      bootUI();
+    } else {
+      // wait up to 5 seconds for Firebase, then boot anyway
+      window._rfReady = bootUI;
+      setTimeout(() => {
+        if (document.getElementById('loginScreen').style.display !== 'none') bootUI();
+      }, 5000);
+    }
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+function doLogout() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') doLogin();
+});
+
+// =======================================
+// NAVIGATION
+// =======================================
+const PAGE_INFO = {
+  dashboard: { title: 'Dashboard', subtitle: 'ROTDINNAH FOUNDATION overview' },
+  siteInfo: { title: 'Site Overview', subtitle: 'Live sections on index.html' },
+  events: { title: 'Events', subtitle: 'Manage events, radio features & community engagements' },
+  articles: { title: 'Articles', subtitle: 'Write and publish articles to the media section' },
+  stories: { title: 'Impact Stories', subtitle: 'Share stories that inspire donors and volunteers' },
+  media: { title: 'Media Library', subtitle: 'Upload and manage photos & audio files' },
+  siteSettings: { title: 'Site Settings', subtitle: 'Visibility toggles and site configuration' },
+  donations: { title: 'Donations', subtitle: 'Paystack donation configuration' }
+};
+
+function showPage(name, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+  const info = PAGE_INFO[name] || {};
+  document.getElementById('pageTitle').textContent = info.title || name;
+  document.getElementById('pageSubtitle').textContent = info.subtitle || '';
+  if (name === 'dashboard') { renderDashboard(); }
+  if (name === 'siteInfo') { renderSiteInfo(); }
+  if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+}
+
+function switchTab(section, tab, btn) {
+  // hide all divs in section
+  if (section === 'events') {
+    document.getElementById('events-list').style.display = tab === 'list' ? '' : 'none';
+    document.getElementById('events-add').style.display = tab === 'add' ? '' : 'none';
+  } else if (section === 'articles') {
+    document.getElementById('articles-list').style.display = tab === 'list' ? '' : 'none';
+    document.getElementById('articles-add').style.display = tab === 'add' ? '' : 'none';
+  } else if (section === 'stories') {
+    document.getElementById('stories-list').style.display = tab === 'list' ? '' : 'none';
+    document.getElementById('stories-add').style.display = tab === 'add' ? '' : 'none';
+  } else if (section === 'media') {
+    document.getElementById('media-library').style.display = tab === 'library' ? '' : 'none';
+    document.getElementById('media-upload').style.display = tab === 'upload' ? '' : 'none';
+  }
+  // update tab pills
+  const pills = document.querySelectorAll('#page-' + section + ' .tab-pill');
+  pills.forEach((p, i) => {
+    const tabNames = { events: ['list','add'], articles: ['list','add'], stories: ['list','add'], media: ['library','upload'] };
+    const tabs = tabNames[section] || [];
+    p.classList.toggle('active', tabs[i] === tab);
+  });
+}
+
+function handleTopbarAction() {
+  const active = document.querySelector('.page.active');
+  if (!active) return;
+  const id = active.id;
+  if (id === 'page-events') { switchTab('events','add',null); scrollTo(0,0); }
+  else if (id === 'page-articles') { switchTab('articles','add',null); scrollTo(0,0); }
+  else if (id === 'page-stories') { switchTab('stories','add',null); scrollTo(0,0); }
+  else if (id === 'page-media') { switchTab('media','upload',null); scrollTo(0,0); }
+  else showPage('events', document.querySelectorAll('.nav-item')[2]);
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// =======================================
+// COUNTS & DASHBOARD
+// =======================================
+function updateCounts() {
+  const ev = getData('events').length;
+  const art = getData('articles').length;
+  const st = getData('stories').length;
+  const md = getData('media').length;
+  document.getElementById('evCount').textContent = ev;
+  document.getElementById('artCount').textContent = art;
+  document.getElementById('storyCount').textContent = st;
+  document.getElementById('mediaCount').textContent = md;
+  document.getElementById('dash-events').textContent = ev;
+  document.getElementById('dash-articles').textContent = art;
+  document.getElementById('dash-stories').textContent = st;
+  document.getElementById('dash-media').textContent = md;
+}
+
+function renderDashboard() {
+  // Recent events
+  const events = getData('events').slice(-3).reverse();
+  const evEl = document.getElementById('dash-recent-events');
+  if (events.length === 0) {
+    evEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No events yet. <a href="#" onclick="showPage(\'events\',null);return false;" style="color:var(--secondary);">Add your first event →</a></p>';
+  } else {
+    evEl.innerHTML = events.map(e => `
+      <div style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+        <i class="fas fa-calendar" style="color:var(--secondary);"></i>
+        <div style="flex:1;">
+          <div style="font-size:0.85rem;font-weight:600;">${esc(e.title)}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);">${e.date || 'No date'}</div>
+        </div>
+        <span class="badge-pill ${e.status==='live'?'badge-live':'badge-draft'}">${e.status}</span>
+      </div>`).join('');
+  }
+  // Recent articles+stories
+  const arts = getData('articles').slice(-2).reverse();
+  const stories = getData('stories').slice(-1).reverse();
+  const artEl = document.getElementById('dash-recent-articles');
+  const all = [...arts.map(a=>({...a,_type:'article'})), ...stories.map(s=>({...s,_type:'story'}))];
+  if (all.length === 0) {
+    artEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No articles yet. <a href="#" onclick="showPage(\'articles\',null);return false;" style="color:var(--secondary);">Write your first article →</a></p>';
+  } else {
+    artEl.innerHTML = all.map(a => `
+      <div style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+        <i class="fas ${a._type==='story'?'fa-heart':'fa-newspaper'}" style="color:var(--secondary);"></i>
+        <div style="flex:1;">
+          <div style="font-size:0.85rem;font-weight:600;">${esc(a.title)}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);">${a._type.toUpperCase()} · ${a.date || ''}</div>
+        </div>
+        <span class="badge-pill ${a._type==='story'?'badge-story':'badge-article'}">${a._type}</span>
+      </div>`).join('');
+  }
+  // Live preview panel
+  renderLivePreview();
+}
+
+// =======================================
+// LIVE INDEX PREVIEW
+// =======================================
+function renderLivePreview() {
+  const liveEvents   = getData('events').filter(e => e.status === 'live');
+  const liveArticles = getData('articles').filter(a => a.status === 'published');
+  const stories      = getData('stories');
+  const media        = getData('media').filter(m => m.type && m.type.startsWith('image'));
+  const el = document.getElementById('dash-live-preview');
+  if (!el) return;
+
+  if (!liveEvents.length && !liveArticles.length && !stories.length && !media.length) {
+    el.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">Nothing published yet. Add events, articles, or stories and set them to <strong>Live / Published</strong> to see them here.</p>';
+    return;
+  }
+
+  const rows = [];
+
+  liveEvents.forEach(e => {
+    rows.push(`<div style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+      ${e.image ? `<img src="${e.image}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;flex-shrink:0;">` : '<div style="width:48px;height:48px;border-radius:8px;background:rgba(255,94,98,0.12);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">📅</div>'}
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(e.title)}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);">${e.date || ''} ${e.location ? '· ' + esc(e.location) : ''}</div>
+      </div>
+      <span class="badge-pill badge-live" style="flex-shrink:0;">Event</span>
+      <button class="action-btn" onclick="showPage('events',document.querySelectorAll('.nav-item')[2]);editEvent('${e.id}')" style="flex-shrink:0;"><i class="fas fa-edit"></i></button>
+    </div>`);
+  });
+
+  liveArticles.forEach(a => {
+    rows.push(`<div style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+      ${a.image ? `<img src="${a.image}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;flex-shrink:0;">` : '<div style="width:48px;height:48px;border-radius:8px;background:rgba(52,152,219,0.12);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">📰</div>'}
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(a.title)}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);">${a.category || 'Article'} · ${a.date || ''}</div>
+      </div>
+      <span class="badge-pill badge-article" style="flex-shrink:0;">Article</span>
+      <button class="action-btn" onclick="showPage('articles',document.querySelectorAll('.nav-item')[3]);editArticle('${a.id}')" style="flex-shrink:0;"><i class="fas fa-edit"></i></button>
+    </div>`);
+  });
+
+  stories.forEach(s => {
+    rows.push(`<div style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+      ${s.image ? `<img src="${s.image}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;flex-shrink:0;">` : '<div style="width:48px;height:48px;border-radius:8px;background:rgba(255,94,98,0.12);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">💬</div>'}
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.title || s.name || 'Story')}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);">Impact Story · ${s.date || ''}</div>
+      </div>
+      <span class="badge-pill badge-story" style="flex-shrink:0;">Story</span>
+    </div>`);
+  });
+
+  if (media.length) {
+    rows.push(`<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;color:var(--accent);">🖼️ ${media.length} gallery image${media.length!==1?'s':''} in Photo Gallery</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${media.slice(0,8).map(m=>`<img src="${m.data}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">`).join('')}
+        ${media.length > 8 ? `<div style="width:44px;height:44px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--text-muted);">+${media.length-8}</div>` : ''}
+      </div>
+    </div>`);
+  }
+
+  el.innerHTML = rows.join('') + `<div style="margin-top:14px;"><a href="index.html" target="_blank" style="font-size:0.82rem;color:var(--secondary);"><i class="fas fa-external-link-alt"></i> View live on index.html →</a></div>`;
+}
+
+// =======================================
+// SITE INFO LIVE CONTENT
+// =======================================
+function renderSiteInfo() {
+  const el = document.getElementById('siteinfo-live-content');
+  if (!el) return;
+
+  const liveEvents   = getData('events').filter(e => e.status === 'live');
+  const draftEvents  = getData('events').filter(e => e.status !== 'live');
+  const liveArticles = getData('articles').filter(a => a.status === 'published');
+  const draftArt     = getData('articles').filter(a => a.status !== 'published');
+  const stories      = getData('stories');
+  const media        = getData('media');
+  const imgs         = media.filter(m => m.type && m.type.startsWith('image'));
+
+  const makeRow = (icon, label, count, color, note) =>
+    `<tr><td>${icon} ${label}</td><td><span class="badge-pill" style="background:${color}22;color:${color};border:1px solid ${color}44;">${count}</span></td><td style="color:var(--text-muted);font-size:0.8rem;">${note}</td></tr>`;
+
+  el.innerHTML = `<table>
+    <thead><tr><th>Content Type</th><th>Count</th><th>Note</th></tr></thead>
+    <tbody>
+      ${makeRow('📅','Live Events', liveEvents.length, '#2ecc71', liveEvents.length ? liveEvents.map(e=>esc(e.title)).join(', ').substring(0,80)+'…' : 'None live yet')}
+      ${draftEvents.length ? makeRow('📅','Draft Events', draftEvents.length, '#f39c12', 'Not visible on site') : ''}
+      ${makeRow('📰','Published Articles', liveArticles.length, '#3498db', liveArticles.length ? liveArticles.map(a=>esc(a.title)).join(', ').substring(0,80)+'…' : 'None published yet')}
+      ${draftArt.length ? makeRow('📰','Draft Articles', draftArt.length, '#f39c12', 'Not visible on site') : ''}
+      ${makeRow('💬','Impact Stories', stories.length, '#ff9a9e', stories.length ? stories.map(s=>esc(s.title||s.name||'Story')).join(', ').substring(0,80)+'…' : 'None added yet')}
+      ${makeRow('🖼️','Gallery Images', imgs.length, '#c77dff', imgs.length ? 'Showing in Photo Gallery tab' : 'None uploaded yet')}
+      ${makeRow('📁','Total Media Files', media.length, '#888', 'Images and audio in Media Library')}
+    </tbody>
+  </table>`;
+}
+
+// =======================================
+// EVENTS CRUD
+// =======================================
+function saveEvent() {
+  const title = document.getElementById('evTitle').value.trim();
+  const desc = document.getElementById('evDesc').innerHTML.trim();
+  if (!title) { showToast('Enter event title', 'error'); return; }
+  const ev = {
+    id: editMode.type === 'event' ? editMode.id : uid(),
+    title,
+    category: document.getElementById('evCategory').value,
+    date: document.getElementById('evDate').value,
+    time: document.getElementById('evTime').value,
+    location: document.getElementById('evLocation').value,
+    host: document.getElementById('evHost').value,
+    desc,
+    status: document.getElementById('evStatus').value,
+    badge: document.getElementById('evBadge').value,
+    guest1: document.getElementById('evGuest1').value,
+    guest2: document.getElementById('evGuest2').value,
+    image: evImgData,
+    audio: evAudioData,
+    created: new Date().toISOString()
+  };
+  const events = getData('events');
+  if (editMode.type === 'event') {
+    const idx = events.findIndex(e => e.id === editMode.id);
+    if (idx !== -1) events[idx] = ev;
+    editMode = { type: null, id: null };
+  } else {
+    events.push(ev);
+  }
+  setData('events', events);
+  showToast('Event saved successfully!', 'success');
+  resetEventForm();
+  renderEventsList();
+  switchTab('events','list',null);
+}
+
+function renderEventsList() {
+  const events = getData('events');
+  document.getElementById('ev-list-count').textContent = events.length + ' event' + (events.length !== 1 ? 's' : '');
+  const body = document.getElementById('events-list-body');
+  if (events.length === 0) {
+    body.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No events yet. Click "+ Add Event" to create one.</p>';
+    return;
+  }
+  body.innerHTML = [...events].reverse().map(e => `
+    <div class="content-card">
+      <div class="thumb">
+        ${e.image ? `<img src="${e.image}" alt="">` : '<i class="fas fa-calendar"></i>'}
+      </div>
+      <div class="info">
+        <h4>${esc(e.title)}</h4>
+        <p>${e.desc ? e.desc.replace(/<[^>]+>/g,'').substring(0,100)+'…' : 'No description'}</p>
+        <div class="meta">
+          <span class="badge-pill ${e.status==='live'?'badge-live':'badge-draft'}">${e.status}</span>
+          ${e.date ? `<span style="font-size:0.75rem;color:var(--text-muted);">${e.date}</span>` : ''}
+          ${e.audio ? `<span style="font-size:0.75rem;color:var(--accent);"><i class="fas fa-microphone"></i> Audio</span>` : ''}
+        </div>
+      </div>
+      <div class="actions">
+        <button class="action-btn" onclick="editEvent('${e.id}')"><i class="fas fa-edit"></i> Edit</button>
+        <button class="action-btn del" onclick="confirmDelete('event','${e.id}','${esc(e.title)}')"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function editEvent(id) {
+  const ev = getData('events').find(e => e.id === id);
+  if (!ev) return;
+  editMode = { type: 'event', id };
+  document.getElementById('evTitle').value = ev.title;
+  document.getElementById('evCategory').value = ev.category || '';
+  document.getElementById('evDate').value = ev.date || '';
+  document.getElementById('evTime').value = ev.time || '';
+  document.getElementById('evLocation').value = ev.location || '';
+  document.getElementById('evHost').value = ev.host || '';
+  document.getElementById('evDesc').innerHTML = ev.desc || '';
+  document.getElementById('evStatus').value = ev.status || 'live';
+  document.getElementById('evBadge').value = ev.badge || '';
+  document.getElementById('evGuest1').value = ev.guest1 || '';
+  document.getElementById('evGuest2').value = ev.guest2 || '';
+  evImgData = ev.image || null;
+  evAudioData = ev.audio || null;
+  if (ev.image) document.getElementById('evImgPreview').innerHTML = `<div class="preview-grid"><div class="preview-item"><img src="${ev.image}"><button class="remove" onclick="evImgData=null;this.parentElement.remove()">×</button></div></div>`;
+  if (ev.audio) document.getElementById('evAudioPreview').innerHTML = `<div class="preview-audio"><i class="fas fa-microphone"></i><span>Audio file attached</span><button onclick="evAudioData=null;this.closest('.preview-audio').remove()">Remove</button></div>`;
+  document.getElementById('evFormTitle').textContent = 'Edit Event';
+  switchTab('events','add',null);
+  scrollTo(0,0);
+}
+
+function resetEventForm() {
+  ['evTitle','evCategory','evDate','evTime','evLocation','evHost','evBadge','evGuest1','evGuest2'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('evDesc').innerHTML = '';
+  document.getElementById('evStatus').value = 'live';
+  document.getElementById('evImgPreview').innerHTML = '';
+  document.getElementById('evAudioPreview').innerHTML = '';
+  document.getElementById('evFormTitle').textContent = 'Add New Event';
+  evImgData = null; evAudioData = null;
+  editMode = { type: null, id: null };
+}
+
+// =======================================
+// ARTICLES CRUD
+// =======================================
+function saveArticle() {
+  const title = document.getElementById('artTitle').value.trim();
+  const body = document.getElementById('artBody').innerHTML.trim();
+  if (!title || !body) { showToast('Title and body are required', 'error'); return; }
+  const art = {
+    id: editMode.type === 'article' ? editMode.id : uid(),
+    title,
+    category: document.getElementById('artCategory').value,
+    author: document.getElementById('artAuthor').value,
+    date: document.getElementById('artDate').value,
+    excerpt: document.getElementById('artExcerpt').value,
+    body,
+    status: document.getElementById('artStatus').value,
+    image: artImgData,
+    created: new Date().toISOString()
+  };
+  const arts = getData('articles');
+  if (editMode.type === 'article') {
+    const idx = arts.findIndex(a => a.id === editMode.id);
+    if (idx !== -1) arts[idx] = art;
+    editMode = { type: null, id: null };
+  } else arts.push(art);
+  setData('articles', arts);
+  showToast('Article published!', 'success');
+  resetArticleForm();
+  renderArticlesList();
+  switchTab('articles','list',null);
+}
+
+function renderArticlesList() {
+  const arts = getData('articles');
+  document.getElementById('art-list-count').textContent = arts.length + ' article' + (arts.length !== 1 ? 's' : '');
+  const body = document.getElementById('articles-list-body');
+  if (arts.length === 0) { body.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No articles yet.</p>'; return; }
+  body.innerHTML = [...arts].reverse().map(a => `
+    <div class="content-card">
+      <div class="thumb">
+        ${a.image ? `<img src="${a.image}" alt="">` : '<i class="fas fa-newspaper"></i>'}
+      </div>
+      <div class="info">
+        <h4>${esc(a.title)}</h4>
+        <p>${a.excerpt || a.body.replace(/<[^>]+>/g,'').substring(0,100)+'…'}</p>
+        <div class="meta">
+          <span class="badge-pill badge-article">${a.category}</span>
+          <span style="font-size:0.75rem;color:var(--text-muted);">${a.date || ''}</span>
+          <span class="badge-pill ${a.status==='published'?'badge-live':'badge-draft'}">${a.status}</span>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="action-btn" onclick="editArticle('${a.id}')"><i class="fas fa-edit"></i> Edit</button>
+        <button class="action-btn del" onclick="confirmDelete('article','${a.id}','${esc(a.title)}')"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function editArticle(id) {
+  const a = getData('articles').find(x => x.id === id);
+  if (!a) return;
+  editMode = { type: 'article', id };
+  document.getElementById('artTitle').value = a.title;
+  document.getElementById('artCategory').value = a.category;
+  document.getElementById('artAuthor').value = a.author || '';
+  document.getElementById('artDate').value = a.date || '';
+  document.getElementById('artExcerpt').value = a.excerpt || '';
+  document.getElementById('artBody').innerHTML = a.body || '';
+  document.getElementById('artStatus').value = a.status || 'published';
+  artImgData = a.image || null;
+  if (a.image) document.getElementById('artImgPreview').innerHTML = `<div class="preview-grid"><div class="preview-item"><img src="${a.image}"><button class="remove" onclick="artImgData=null;this.parentElement.remove()">×</button></div></div>`;
+  document.getElementById('artFormTitle').textContent = 'Edit Article';
+  switchTab('articles','add',null); scrollTo(0,0);
+}
+
+function resetArticleForm() {
+  ['artTitle','artAuthor','artDate','artExcerpt'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('artBody').innerHTML = '';
+  document.getElementById('artImgPreview').innerHTML = '';
+  document.getElementById('artFormTitle').textContent = 'Write New Article';
+  artImgData = null; editMode = { type: null, id: null };
+}
+
+// =======================================
+// STORIES CRUD
+// =======================================
+function saveStory() {
+  const title = document.getElementById('stTitle').value.trim();
+  const body = document.getElementById('stBody').innerHTML.trim();
+  if (!title || !body) { showToast('Title and story body required', 'error'); return; }
+  const st = {
+    id: editMode.type === 'story' ? editMode.id : uid(),
+    title,
+    subject: document.getElementById('stSubject').value,
+    category: document.getElementById('stCategory').value,
+    date: document.getElementById('stDate').value,
+    body,
+    image: stImgData,
+    audio: stAudioData,
+    created: new Date().toISOString()
+  };
+  const stories = getData('stories');
+  if (editMode.type === 'story') {
+    const idx = stories.findIndex(s => s.id === editMode.id);
+    if (idx !== -1) stories[idx] = st;
+    editMode = { type: null, id: null };
+  } else stories.push(st);
+  setData('stories', stories);
+  showToast('Story saved!', 'success');
+  resetStoryForm();
+  renderStoriesList();
+  switchTab('stories','list',null);
+}
+
+function renderStoriesList() {
+  const stories = getData('stories');
+  document.getElementById('story-list-count').textContent = stories.length + ' stor' + (stories.length !== 1 ? 'ies' : 'y');
+  const body = document.getElementById('stories-list-body');
+  if (stories.length === 0) { body.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No stories yet.</p>'; return; }
+  body.innerHTML = [...stories].reverse().map(s => `
+    <div class="content-card">
+      <div class="thumb">
+        ${s.image ? `<img src="${s.image}" alt="">` : '<i class="fas fa-heart"></i>'}
+      </div>
+      <div class="info">
+        <h4>${esc(s.title)}</h4>
+        <p>${s.body.replace(/<[^>]+>/g,'').substring(0,100)}…</p>
+        <div class="meta">
+          <span class="badge-pill badge-story">${s.category}</span>
+          ${s.subject ? `<span style="font-size:0.75rem;color:var(--text-muted);">${esc(s.subject)}</span>` : ''}
+          ${s.audio ? `<span style="font-size:0.75rem;color:var(--accent);"><i class="fas fa-microphone"></i> Audio</span>` : ''}
+        </div>
+      </div>
+      <div class="actions">
+        <button class="action-btn" onclick="editStory('${s.id}')"><i class="fas fa-edit"></i> Edit</button>
+        <button class="action-btn del" onclick="confirmDelete('story','${s.id}','${esc(s.title)}')"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function editStory(id) {
+  const s = getData('stories').find(x => x.id === id);
+  if (!s) return;
+  editMode = { type: 'story', id };
+  document.getElementById('stTitle').value = s.title;
+  document.getElementById('stSubject').value = s.subject || '';
+  document.getElementById('stCategory').value = s.category;
+  document.getElementById('stDate').value = s.date || '';
+  document.getElementById('stBody').innerHTML = s.body;
+  stImgData = s.image || null;
+  stAudioData = s.audio || null;
+  if (s.image) document.getElementById('stImgPreview').innerHTML = `<div class="preview-grid"><div class="preview-item"><img src="${s.image}"><button class="remove" onclick="stImgData=null;this.parentElement.remove()">×</button></div></div>`;
+  document.getElementById('storyFormTitle').textContent = 'Edit Story';
+  switchTab('stories','add',null); scrollTo(0,0);
+}
+
+function resetStoryForm() {
+  ['stTitle','stSubject','stDate'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('stBody').innerHTML = '';
+  document.getElementById('stImgPreview').innerHTML = '';
+  document.getElementById('stAudioPreview').innerHTML = '';
+  document.getElementById('storyFormTitle').textContent = 'Share an Impact Story';
+  stImgData = null; stAudioData = null; editMode = { type: null, id: null };
+}
+
+// =======================================
+// MEDIA LIBRARY
+// =======================================
+function saveMedia() {
+  if (mediaPendingFiles.length === 0) { showToast('No files selected', 'error'); return; }
+  const media = getData('media');
+  mediaPendingFiles.forEach(f => {
+    media.push({
+      id: uid(),
+      name: f.name,
+      type: f.type,
+      section: document.getElementById('mediaSection').value,
+      caption: document.getElementById('mediaCaption').value,
+      data: f.data,
+      created: new Date().toISOString()
+    });
+  });
+  setData('media', media);
+  showToast(mediaPendingFiles.length + ' file(s) uploaded!', 'success');
+  mediaPendingFiles = [];
+  document.getElementById('mediaPreviewArea').innerHTML = '';
+  document.getElementById('mediaCaption').value = '';
+  renderMediaLibrary();
+  switchTab('media','library',null);
+}
+
+function renderMediaLibrary() {
+  const media = getData('media');
+  document.getElementById('media-list-count').textContent = media.length + ' file' + (media.length !== 1 ? 's' : '');
+  const grid = document.getElementById('media-grid');
+  if (media.length === 0) {
+    grid.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;grid-column:1/-1;">No media uploaded yet.</p>';
+    return;
+  }
+  grid.innerHTML = [...media].reverse().map(m => `
+    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface2);">
+      <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:var(--surface3);">
+        ${m.type && m.type.startsWith('image') ? `<img src="${m.data}" style="width:100%;height:100%;object-fit:cover;">` :
+          `<div style="text-align:center;padding:8px;"><i class="fas fa-music" style="font-size:1.8rem;color:var(--accent);"></i><p style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;">${esc(m.name)}</p></div>`}
+      </div>
+      <div style="padding:8px;">
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(m.caption || m.name)}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:0.65rem;color:var(--text-dim);">${m.section}</span>
+          <button onclick="confirmDelete('media','${m.id}','${esc(m.name)}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.7rem;"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderMediaPreviews(file, fileList) {
+  const files = fileList || (file ? [file] : []);
+  Array.from(files).forEach(f => {
+    if (f.size > 52428800) { showToast(f.name + ' is too large (max 50MB)', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      mediaPendingFiles.push({ name: f.name, type: f.type, data: e.target.result });
+      const area = document.getElementById('mediaPreviewArea');
+      const div = document.createElement('div');
+      div.className = 'preview-item';
+      if (f.type.startsWith('image')) {
+        div.innerHTML = `<img src="${e.target.result}"><button class="remove">×</button>`;
+      } else {
+        div.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;"><i class="fas fa-music" style="color:var(--accent);font-size:1.5rem;"></i><small style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;padding:0 4px;text-align:center;">${f.name}</small></div><button class="remove">×</button>`;
+      }
+      div.querySelector('.remove').onclick = () => {
+        mediaPendingFiles = mediaPendingFiles.filter(x => x.name !== f.name);
+        div.remove();
+      };
+      area.appendChild(div);
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+// =======================================
+// FILE UPLOAD HELPERS
+// =======================================
+function fileToBase64(file, cb) {
+  if (!file) return;
+  if (file.size > 52428800) { showToast('File too large (max 50MB)', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => cb(e.target.result);
+  reader.readAsDataURL(file);
+}
+
+function renderEvImg(file) {
+  fileToBase64(file, data => {
+    evImgData = data;
+    document.getElementById('evImgPreview').innerHTML = `<div class="preview-grid"><div class="preview-item"><img src="${data}"><button class="remove" onclick="evImgData=null;this.parentElement.remove()">×</button></div></div>`;
+  });
+}
+function renderEvAudio(file) {
+  fileToBase64(file, data => {
+    evAudioData = data;
+    document.getElementById('evAudioPreview').innerHTML = `<div class="preview-audio"><i class="fas fa-microphone"></i><span>${esc(file.name)}</span><button onclick="evAudioData=null;this.closest('.preview-audio').remove()"><i class="fas fa-times"></i></button></div>`;
+  });
+}
+function renderArtImg(file) {
+  fileToBase64(file, data => {
+    artImgData = data;
+    document.getElementById('artImgPreview').innerHTML = `<div class="preview-grid"><div class="preview-item"><img src="${data}"><button class="remove" onclick="artImgData=null;this.parentElement.remove()">×</button></div></div>`;
+  });
+}
+function renderStImg(file) {
+  fileToBase64(file, data => {
+    stImgData = data;
+    document.getElementById('stImgPreview').innerHTML = `<div class="preview-grid"><div class="preview-item"><img src="${data}"><button class="remove" onclick="stImgData=null;this.parentElement.remove()">×</button></div></div>`;
+  });
+}
+function renderStAudio(file) {
+  fileToBase64(file, data => {
+    stAudioData = data;
+    document.getElementById('stAudioPreview').innerHTML = `<div class="preview-audio"><i class="fas fa-microphone"></i><span>${esc(file.name)}</span><button onclick="stAudioData=null;this.closest('.preview-audio').remove()"><i class="fas fa-times"></i></button></div>`;
+  });
+}
+
+function dragOver(e, zone) { e.preventDefault(); zone.classList.add('dragover'); }
+function dropFile(e, inputId, renderFn) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('dragover');
+  const files = e.dataTransfer.files;
+  if (files.length) {
+    if (inputId === 'mediaInput') { renderMediaPreviews(null, files); }
+    else renderFn(files[0]);
+  }
+}
+
+// =======================================
+// RICH TEXT
+// =======================================
+function fmt(cmd) { document.getElementById('evDesc').focus(); document.execCommand(cmd, false, null); }
+function fmt2(cmd) { document.getElementById('artBody').focus(); document.execCommand(cmd, false, null); }
+function fmt3(cmd) { document.getElementById('stBody').focus(); document.execCommand(cmd, false, null); }
+
+// =======================================
+// DELETE
+// =======================================
+function confirmDelete(type, id, name) {
+  document.getElementById('deleteMsg').textContent = `Delete "${name}"? This cannot be undone.`;
+  pendingDelete = { type, id };
+  document.getElementById('deleteModal').classList.add('open');
+  document.getElementById('deleteConfirm').onclick = doDelete;
+}
+function doDelete() {
+  if (!pendingDelete) return;
+  const { type, id } = pendingDelete;
+  const key = type === 'event' ? 'events' : type === 'article' ? 'articles' : type === 'story' ? 'stories' : 'media';
+  const arr = getData(key).filter(x => x.id !== id);
+  setData(key, arr);
+  renderAllLists();
+  renderDashboard();
+  closeModal();
+  showToast('Item deleted', 'info');
+}
+function closeModal() {
+  document.getElementById('deleteModal').classList.remove('open');
+  pendingDelete = null;
+}
+
+// =======================================
+// SETTINGS
+// =======================================
+function toggleSetting(el) { el.classList.toggle('on'); }
+function saveSettings() { showToast('Settings saved!', 'success'); }
+function copyExportCode() {
+  navigator.clipboard.writeText(document.getElementById('exportCode').textContent).then(() => showToast('Code copied!', 'success'));
+}
+
+// =======================================
+// TOAST
+// =======================================
+let toastTimer;
+function showToast(msg, type='info') {
+  clearTimeout(toastTimer);
+  const t = document.getElementById('toast');
+  const icon = { success:'fa-check-circle', error:'fa-times-circle', info:'fa-info-circle' };
+  t.className = 'show ' + type;
+  document.getElementById('toastIcon').innerHTML = `<i class="fas ${icon[type]||'fa-info-circle'}"></i>`;
+  document.getElementById('toastMsg').textContent = msg;
+  toastTimer = setTimeout(() => t.className = '', 3000);
+}
+
+// =======================================
+// UTILS
+// =======================================
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function setTodayDates() {
+  const today = new Date().toISOString().split('T')[0];
+  ['evDate','artDate','stDate'].forEach(id => { const el = document.getElementById(id); if (el && !el.value) el.value = today; });
+}
+
+function renderAllLists() {
+  renderEventsList();
+  renderArticlesList();
+  renderStoriesList();
+  renderMediaLibrary();
+}
+
+// Close modal on overlay click
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+<script>
+// Example modification inside your Form Submission handler:
+async function handleCreateEvent(eventData) {
+  const { data, error } = await supabase
+    .from('events')
+    .insert([
+      { 
+        title: eventData.title, 
+        date: eventData.date, 
+        time: eventData.time, 
+        location: eventData.location, 
+        desc: eventData.desc,
+        image: eventData.imageURL
+      }
+    ]);
+
+  if (error) {
+    showToast('Failed to save to database: ' + error.message, 'error');
+  } else {
+    showToast('Event published successfully!', 'success');
+    renderAllLists();
+  }
+}
+</script>
+</body>
+</html>
