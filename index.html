@@ -1,19 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-  // Correctly initialize Supabase client
-  const SUPABASE_URL = "https://kbnqulkwuwwztenmrwsu.supabase.co"; 
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibnF1bGt3dXd3enRlbm1yd3N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNzc2NTQsImV4cCI6MjA5Nzc1MzY1NH0.AJsU9RiFTlCdJxqRhiGGcAZbdylnee1sw2EdEdHhLmU";
-  
-  // Changed supabaseClient to supabase
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-</script>
-  
-  // Initialize the Supabase Client
-  const supabase = supabaseClient.createClient(SUPABASE_URL, SUPABASE_KEY);
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3477021769959149"
      crossorigin="anonymous"></script>
      <meta name="google-adsense-account" content="ca-pub-3477021769959149">
@@ -2008,31 +1995,6 @@ const db  = getFirestore(app);
   console.log('[ROTDINNAH CMS] Firebase — events:', events.length,
     '| articles:', articles.length, '| stories:', stories.length,
     '| gallery images:', galleryImages.length);
-})();
-</script>
-<script>
-    (async function() {
-  // 1. Fetch live data records from your Supabase tables
-  const { data: events, error: evError } = await supabase.from('events').select('*');
-  const { data: articles, error: artError } = await supabase.from('articles').select('*');
-  const { data: stories, error: stError } = await supabase.from('stories').select('*');
-
-  if (evError || artError || stError) {
-    console.error('[Supabase Error]:', evError || artError || stError);
-  }
-
-  // 2. Fallbacks to prevent rendering errors if tables are empty
-  const liveEvents = events || [];
-  const liveArticles = articles || [];
-  const liveStories = stories || [];
-
-  // 3. Keep your existing rendering interface logic intact below 
-  // (Pass your database arrays to the existing display script loops)
-  if (typeof renderEvents === "function") {
-    renderEvents(liveEvents);
-    renderArticles(liveArticles);
-    renderStories(liveStories);
-  }
 })();
 </script>
 </body>
