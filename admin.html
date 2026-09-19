@@ -1,17 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-  // Correctly initialize Supabase client
-  const SUPABASE_URL = "https://kbnqulkwuwwztenmrwsu.supabase.co"; 
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibnF1bGt3dXd3enRlbm1yd3N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNzc2NTQsImV4cCI6MjA5Nzc1MzY1NH0.AJsU9RiFTlCdJxqRhiGGcAZbdylnee1sw2EdEdHhLmU";
-  
-  // Changed supabaseClient to supabase
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-</script>
-<meta charset="UTF-8">
+  <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ROTDINNAH FOUNDATION — Admin Panel</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1226,38 +1216,47 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 
-// ── in-memory cache (replaces localStorage) ──────────────────────────
-window._rfCache = { events: [], articles: [], stories: [], media: [] };
+// ── in-memory cache ───────────────────────────────────────────────────
+window._rfCache  = { events: [], articles: [], stories: [], media: [] };
+// what Firestore is known to hold: key -> Map(id -> json string)
+window._rfSynced = { events: new Map(), articles: new Map(), stories: new Map(), media: new Map() };
 
-// ── helpers exposed to non-module script below ────────────────────────
 window._rfDB = db;
 window._rfCol = collection;
-window._rfGetDocs = getDocs;
 window._rfSetDoc = setDoc;
 window._rfDeleteDoc = deleteDoc;
 window._rfDoc = doc;
-window._rfOnSnapshot = onSnapshot;
 
-// ── load all collections on startup ──────────────────────────────────
+const norm = d => ({ id: d.id, ...d.data() });
+
+function applySnapshot(key, snap) {
+  const items = snap.docs.map(norm);
+  window._rfCache[key] = items;
+  const m = new Map();
+  items.forEach(i => m.set(i.id, JSON.stringify(i)));
+  window._rfSynced[key] = m;
+}
+
 async function loadAll() {
-  for (const key of ['events','articles','stories','media']) {
-    const snap = await getDocs(collection(db, key));
-    window._rfCache[key] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  try {
+    for (const key of ['events','articles','stories','media']) {
+      applySnapshot(key, await getDocs(collection(db, key)));
+    }
+  } catch (e) {
+    console.error('Firebase LOAD error:', e.code, e.message, e);
   }
-  // now boot the UI
   if (typeof window._rfReady === 'function') window._rfReady();
 }
 
-// live listeners — any change in Firestore instantly updates the cache & UI
 ['events','articles','stories','media'].forEach(key => {
   onSnapshot(collection(db, key), snap => {
-    window._rfCache[key] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    applySnapshot(key, snap);
     if (window._rfUIReady) {
-      updateCounts();
-      renderLivePreview();
-      renderAllLists();
-      renderDashboard();
+      updateCounts(); renderLivePreview(); renderAllLists(); renderDashboard();
     }
+  }, err => {
+    console.error('Firebase LISTEN error (' + key + '):', err.code, err.message, err);
+    if (window._rfUIReady && typeof showToast === 'function') showToast('Read blocked: ' + (err.code || err.message), 'error');
   });
 });
 
@@ -1281,30 +1280,39 @@ function getData(key) {
 }
 
 async function setData(key, arr) {
-  // update cache immediately so UI feels instant
+  const synced = window._rfSynced[key];
   window._rfCache[key] = arr;
   updateCounts();
   renderLivePreview();
 
-  // sync every item to Firestore
-  const col = window._rfCol(window._rfDB, key);
-  // delete removed docs
+  const newIds = new Set(arr.map(i => i.id));
+  const toWrite = [];
+  for (const item of arr) {
+    const clean = JSON.parse(JSON.stringify(item)); // strips undefined (Firestore rejects it)
+    const json = JSON.stringify(clean);
+    if (synced.get(item.id) === json) continue;      // unchanged, skip
+    if (json.length > 1000000) {                      // Firestore doc limit is 1 MiB
+      showToast('"' + (item.title || item.name || item.id) + '" is too big for the database (' + Math.round(json.length/1024) + 'KB, max ~1000KB). Use a smaller image/audio.', 'error');
+      window._rfCache[key] = Array.from(synced.values()).map(j => JSON.parse(j)); // roll back
+      renderAllLists(); renderDashboard(); updateCounts();
+      return;
+    }
+    toWrite.push([item.id, clean, json]);
+  }
+  const toDelete = [...synced.keys()].filter(id => !newIds.has(id));
+
   try {
-    const snap = await window._rfGetDocs(col);
-    const existingIds = snap.docs.map(d => d.id);
-    const newIds = arr.map(i => i.id);
-    for (const eid of existingIds) {
-      if (!newIds.includes(eid)) {
-        await window._rfDeleteDoc(window._rfDoc(window._rfDB, key, eid));
-      }
+    for (const id of toDelete) {
+      await window._rfDeleteDoc(window._rfDoc(window._rfDB, key, id));
+      synced.delete(id);
     }
-    // upsert all items
-    for (const item of arr) {
-      await window._rfSetDoc(window._rfDoc(window._rfDB, key, item.id), item);
+    for (const [id, clean, json] of toWrite) {
+      await window._rfSetDoc(window._rfDoc(window._rfDB, key, id), clean);
+      synced.set(id, json);
     }
-  } catch(e) {
-    console.error('Firebase sync error:', e);
-    showToast('Sync error — check console', 'error');
+  } catch (e) {
+    console.error('Firebase sync error:', e.code, e.message, e);
+    showToast('Sync error: ' + (e.code || e.message), 'error');
   }
 }
 
@@ -1912,38 +1920,77 @@ function renderMediaLibrary() {
 
 function renderMediaPreviews(file, fileList) {
   const files = fileList || (file ? [file] : []);
-  Array.from(files).forEach(f => {
-    if (f.size > 52428800) { showToast(f.name + ' is too large (max 50MB)', 'error'); return; }
-    const reader = new FileReader();
-    reader.onload = e => {
-      mediaPendingFiles.push({ name: f.name, type: f.type, data: e.target.result });
-      const area = document.getElementById('mediaPreviewArea');
-      const div = document.createElement('div');
-      div.className = 'preview-item';
-      if (f.type.startsWith('image')) {
-        div.innerHTML = `<img src="${e.target.result}"><button class="remove">×</button>`;
-      } else {
-        div.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;"><i class="fas fa-music" style="color:var(--accent);font-size:1.5rem;"></i><small style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;padding:0 4px;text-align:center;">${f.name}</small></div><button class="remove">×</button>`;
-      }
-      div.querySelector('.remove').onclick = () => {
-        mediaPendingFiles = mediaPendingFiles.filter(x => x.name !== f.name);
-        div.remove();
-      };
-      area.appendChild(div);
+  Array.from(files).forEach(async f => {
+    let data;
+    try { data = await readFileForDB(f); }
+    catch (err) { showToast(err.message, 'error'); return; }
+    const type = (f.type.startsWith('image/') && f.type !== 'image/gif') ? 'image/jpeg' : f.type;
+    mediaPendingFiles.push({ name: f.name, type, data });
+    const area = document.getElementById('mediaPreviewArea');
+    const div = document.createElement('div');
+    div.className = 'preview-item';
+    if (type.startsWith('image')) {
+      div.innerHTML = `<img src="${data}"><button class="remove">×</button>`;
+    } else {
+      div.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;"><i class="fas fa-music" style="color:var(--accent);font-size:1.5rem;"></i><small style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;padding:0 4px;text-align:center;">${esc(f.name)}</small></div><button class="remove">×</button>`;
+    }
+    div.querySelector('.remove').onclick = () => {
+      mediaPendingFiles = mediaPendingFiles.filter(x => x.data !== data);
+      div.remove();
     };
-    reader.readAsDataURL(f);
+    area.appendChild(div);
   });
 }
 
 // =======================================
 // FILE UPLOAD HELPERS
 // =======================================
+const DB_FIELD_LIMIT = 850000; // chars of base64 per field (Firestore doc max = 1 MiB)
+
+function readAsDataURL(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = () => rej(new Error('Could not read ' + file.name));
+    r.readAsDataURL(file);
+  });
+}
+
+function loadImg(src) {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => rej(new Error('Could not decode image'));
+    im.src = src;
+  });
+}
+
+async function readFileForDB(file) {
+  const raw = await readAsDataURL(file);
+  const isImg = file.type.startsWith('image/') && file.type !== 'image/gif';
+  if (isImg) {
+    const im = await loadImg(raw);
+    for (const [maxDim, q] of [[1400,0.8],[1100,0.7],[800,0.6],[600,0.5]]) {
+      const sc = Math.min(1, maxDim / Math.max(im.width, im.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(im, 0, 0, c.width, c.height);
+      const out = c.toDataURL('image/jpeg', q);
+      if (out.length <= DB_FIELD_LIMIT) return out;
+    }
+    throw new Error(file.name + ' could not be compressed enough');
+  }
+  if (raw.length > DB_FIELD_LIMIT) {
+    throw new Error(file.name + ' is too large for the database (' + Math.round(raw.length/1024) + 'KB, max ~' + Math.round(DB_FIELD_LIMIT/1024) + 'KB). Compress it first.');
+  }
+  return raw;
+}
+
 function fileToBase64(file, cb) {
   if (!file) return;
-  if (file.size > 52428800) { showToast('File too large (max 50MB)', 'error'); return; }
-  const reader = new FileReader();
-  reader.onload = e => cb(e.target.result);
-  reader.readAsDataURL(file);
+  readFileForDB(file).then(cb).catch(err => showToast(err.message, 'error'));
 }
 
 function renderEvImg(file) {
@@ -2063,30 +2110,6 @@ function renderAllLists() {
 document.getElementById('deleteModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
-</script>
-<script>
-// Example modification inside your Form Submission handler:
-async function handleCreateEvent(eventData) {
-  const { data, error } = await supabase
-    .from('events')
-    .insert([
-      { 
-        title: eventData.title, 
-        date: eventData.date, 
-        time: eventData.time, 
-        location: eventData.location, 
-        desc: eventData.desc,
-        image: eventData.imageURL
-      }
-    ]);
-
-  if (error) {
-    showToast('Failed to save to database: ' + error.message, 'error');
-  } else {
-    showToast('Event published successfully!', 'success');
-    renderAllLists();
-  }
-}
 </script>
 </body>
 </html>
